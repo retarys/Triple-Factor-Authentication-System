@@ -1,12 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
+{% extends 'partials/base.html' %}
+
+{% block content %}
     {% include 'partials/messages.html' %}
+<div class="d-flex align-items-center justify-content-center mt-5 flex-column">
     <h3>TOTP Setup</h3>
     <h3>Issuer: MyApp</h3>
     
@@ -15,7 +11,7 @@
     {% csrf_token %}
         <label for="totp_code">Enter TOTP Code:</label>
         <input type="text" id="totp_code" name="totp_code" required>
-        <button type="submit">Verify</button>
+        <button type="submit" class="btn btn-primary">Verify</button>
    </form>
-</body>
-</html>
+</div>
+{% endblock %}

@@ -1,20 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <style>
-    body { font-family: Arial, sans-serif; }
-    .box { border: 1px solid #ddd; padding: 12px; margin: 12px 0; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; font-size: 14px; }
-    </style>
-</head>
-<body>
+{% extends 'partials/base.html' %}
+{% block content %}
+<div class="container mt-5">
     <h1>Security Events</h1>
     {% if events %}
-        <table>
+        <table class="table">
             <thead>
                 <tr>
                     <th>Time</th>
@@ -35,5 +24,5 @@
     {% else %}
         <p>No security events recorded.</p>
     {% endif %}
-</body>
-</html>
+</div>
+{% endblock %}

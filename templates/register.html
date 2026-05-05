@@ -1,12 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    {% include 'partials/messages.html' %}
+{% extends 'partials/base.html' %}
+{% block content %}
+
+  {% include 'partials/messages.html' %}
+  <div class="d-flex align-items-center justify-content-center mt-5">
   <form method="post">
     {% csrf_token %}
     <div>
@@ -18,6 +14,7 @@
         <label for="">Password</label>
         {{ form.password1 }}
     </div>
+    <br>
     <div>
         <label for="">Confirm Password</label>
         {{ form.password2 }}
@@ -27,7 +24,7 @@
       <p style="color:red;">{{ error }}</p>
     {% endif %}
     <br>
-    <button type="submit">Submit</button>
+    <button type="submit" class="btn btn-primary">Submit</button>
   </form>
-</body>
-</html>
+  </div>
+{% endblock %}

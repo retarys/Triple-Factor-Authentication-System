@@ -19,12 +19,12 @@ from .forms import RegistrationForm
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 
-#Helpers for Login and Registration Sessions
-
+#Event logger
 def log_event(user=None, event_type=str):
     SecurityEvent.objects.create(user=user, event_type=event_type)
     return 
 
+#Helpers for Login and Registration Sessions
 
 def check_loginsession(request,login_session):
     if not login_session:
@@ -65,11 +65,6 @@ def get_registration_session(request):
     except RegistrationSession.DoesNotExist:
         messages.error(request,"Registration session not found")
         return None
-
-
-def login_main(request):
-    return render(request, 'login_main.html')
-
 
 
 # Registration Views
@@ -139,7 +134,7 @@ def totp_setup(request):
     if not created:
         messages.error(request, "TOTP for this user already exists.")
         print("TOTP already exists for user:", user.username)
-        return redirect("totp_setup")
+        return redirect("home")
     
     secret = totp_sercret_obj.secret
     totp_uri = pyotp.totp.TOTP(secret).provisioning_uri(name=user.username, issuer_name="MyApp")
@@ -217,6 +212,7 @@ def security_events(request):
     events = SecurityEvent.objects.all().order_by('-created_at')
     return render(request, 'security_events.html', {'events': events})
 
+#Login views
 def login_password(request):
     try:
         if request.method == "POST":
@@ -237,6 +233,7 @@ def login_password(request):
     except Exception as e:
         messages.error(request, f"An error occurred: {e}")
         log_event(None, EventType.LOGIN_PWD_FAIL)
+        return redirect('home')
     return render(request, 'login/login_password.html')
 
 def login_totp(request):
@@ -247,7 +244,7 @@ def login_totp(request):
 
         if not login_session.pwd_ok:
             messages.error(request,"Password verification required")
-            return redirect("login_password")
+            return redirect("home")
         
         user = login_session.user
         if request.method == "POST":
@@ -265,9 +262,11 @@ def login_totp(request):
             else:
                 messages.error(request, "Invalid TOTP code.")
                 log_event(user, EventType.OTP_FAIL)
+                return redirect('home')
     except Exception as e:
         messages.error(request, f"An error occurred: {e}")
         log_event(None, EventType.OTP_FAIL)
+        return redirect('home')
     return render(request, 'login/login_totp.html')
 
 def login_facerec(request):
@@ -276,7 +275,7 @@ def login_facerec(request):
         return redirect("login_password")
     if not login_session.otp_ok:
         messages.error(request,"TOTP verification required")
-        return redirect("login_totp")
+        return redirect("home")
     user = login_session.user
 
     target = FaceTemplate.objects.get(user=user).template
@@ -350,11 +349,11 @@ def login_facerec(request):
                         unknown_start_time = time.time()
                     elapsed = time.time() - unknown_start_time
                     if elapsed >= REQUIRED_SECONDS:
-                        messages.error(request, "Face not recognized. Please try again.")
+                        messages.error(request, "Face not recognized.")
                         log_event(user, EventType.FACE_FAIL)
                         video_capture.release()
                         cv2.destroyAllWindows()      
-                        return redirect("login_totp")
+                        return redirect("home")
 
 
         if len(face_locations) == 0:
