@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    {% include 'partials/messages.html' %}
+    <h3>TOTP Setup</h3>
+    <h3>Issuer: MyApp</h3>
+    
+   <img src="data:image/png;base64,{{ qr_code }}" alt="TOTP QR Code" style="width:220px; height:220px;">
+   <form method="post">
+    {% csrf_token %}
+        <label for="totp_code">Enter TOTP Code:</label>
+        <input type="text" id="totp_code" name="totp_code" required>
+        <button type="submit">Verify</button>
+   </form>
+</body>
+</html>
