@@ -12,5 +12,6 @@ urlpatterns = [
 
     path('login_password/', views.login_password, name='login_password'),
     path('login_totp/', views.login_totp, name='login_totp'),
-    path('login_facerec/', views.login_facerec, name='login_facerec'),
+    path('login_facerec/', views.FaceLoginView.as_view(), name='login_facerec'),
+    path('login_facerec/recognize_face/', views.FaceLoginView.recognize_face, name='recognize_face'),
 ]

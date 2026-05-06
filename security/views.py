@@ -269,103 +269,113 @@ def login_totp(request):
         return redirect('home')
     return render(request, 'login/login_totp.html')
 
-def login_facerec(request):
-    login_session = get_login_session(request)
-    if not check_loginsession(request, login_session):
-        return redirect("login_password")
-    if not login_session.otp_ok:
-        messages.error(request,"TOTP verification required")
-        return redirect("home")
-    user = login_session.user
+class FaceLoginView(View):
+    def get(self, request):
+        login_session = get_login_session(request)
+        if not check_loginsession(request, login_session):
+            return redirect("login_password")
+        if not login_session.otp_ok:
+            messages.error(request,"TOTP verification required")
+            return redirect("home")
+        return render(request, 'login/login_facerec.html')
+    
+    def recognize_face(request):
+        login_session = get_login_session(request)
+        if not check_loginsession(request, login_session):
+            return redirect("login_password")
+        if not login_session.otp_ok:
+            messages.error(request,"TOTP verification required")
+            return redirect("home")
+        user = login_session.user
 
-    target = FaceTemplate.objects.get(user=user).template
-    target_name = user.username
-    video_capture = cv2.VideoCapture(0)
-    known_face_encodings = [target,]
-    known_face_names = [target_name,]
+        target = FaceTemplate.objects.get(user=user).template
+        target_name = user.username
+        video_capture = cv2.VideoCapture(0)
+        known_face_encodings = [target,]
+        known_face_names = [target_name,]
 
-    recognized_start_time = None
-    unknown_start_time = None
-    REQUIRED_SECONDS = 3
-    while True:
-        # Grab a single frame of video
-        ret, frame = video_capture.read()
+        recognized_start_time = None
+        unknown_start_time = None
+        REQUIRED_SECONDS = 3
+        while True:
+            # Grab a single frame of video
+            ret, frame = video_capture.read()
 
-        # Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            # Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-        # Find all the faces and face enqcodings in the frame of video
-        face_locations = face_recognition.face_locations(rgb_frame)
-        face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
+            # Find all the faces and face enqcodings in the frame of video
+            face_locations = face_recognition.face_locations(rgb_frame)
+            face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
 
-        # Loop through each face in this frame of video
-        for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings):
-            # See if the face is a match for the known face(s)
-            matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
+            # Loop through each face in this frame of video
+            for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings):
+                # See if the face is a match for the known face(s)
+                matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
 
-            name = "Unknown"
+                name = "Unknown"
 
-            # If a match was found in known_face_encodings, just use the first one.
-            # if True in matches:
-            #     first_match_index = matches.index(True)
-            #     name = known_face_names[first_match_index]
+                # If a match was found in known_face_encodings, just use the first one.
+                # if True in matches:
+                #     first_match_index = matches.index(True)
+                #     name = known_face_names[first_match_index]
 
-            # Or instead, use the known face with the smallest distance to the new face
-            face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
-            best_match_index = np.argmin(face_distances)
-            if matches[best_match_index]:
-                name = known_face_names[best_match_index]
+                # Or instead, use the known face with the smallest distance to the new face
+                face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
+                best_match_index = np.argmin(face_distances)
+                if matches[best_match_index]:
+                    name = known_face_names[best_match_index]
 
-            # Draw a box around the face
-            cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
+                # Draw a box around the face
+                cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
 
-            # Draw a label with a name below the face
-            cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (0, 0, 255), cv2.FILLED)
-            font = cv2.FONT_HERSHEY_DUPLEX
-            cv2.putText(frame, name, (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 1)
+                # Draw a label with a name below the face
+                cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (0, 0, 255), cv2.FILLED)
+                font = cv2.FONT_HERSHEY_DUPLEX
+                cv2.putText(frame, name, (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 1)
 
-            if matches:
-                if name in known_face_names:
-                    if recognized_start_time is None:
-                        recognized_start_time = time.time()
-                
-                    elapsed = time.time() - recognized_start_time
-                    if elapsed >= REQUIRED_SECONDS:
-                        login_session.face_ok = True
-                        login_session.save()
+                if matches:
+                    if name in known_face_names:
+                        if recognized_start_time is None:
+                            recognized_start_time = time.time()
+                    
+                        elapsed = time.time() - recognized_start_time
+                        if elapsed >= REQUIRED_SECONDS:
+                            login_session.face_ok = True
+                            login_session.save()
 
-                        if login_session.pwd_ok and login_session.otp_ok and login_session.face_ok:
-                            login(request,user)
+                            if login_session.pwd_ok and login_session.otp_ok and login_session.face_ok:
+                                login(request,user)
 
-                            if "login_session_id" in request.session:
-                                del request.session["login_session_id"]
-                            messages.success(request, "Login successful!")
-                            log_event(user, EventType.FACE_OK)
+                                if "login_session_id" in request.session:
+                                    del request.session["login_session_id"]
+                                messages.success(request, "Login successful!")
+                                log_event(user, EventType.FACE_OK)
+                                video_capture.release()
+                                cv2.destroyAllWindows()      
+                                return redirect("home")
+                    else:
+                        if unknown_start_time is None:
+                            unknown_start_time = time.time()
+                        elapsed = time.time() - unknown_start_time
+                        if elapsed >= REQUIRED_SECONDS:
+                            messages.error(request, "Face not recognized.")
+                            log_event(user, EventType.FACE_FAIL)
                             video_capture.release()
                             cv2.destroyAllWindows()      
                             return redirect("home")
-                else:
-                    if unknown_start_time is None:
-                        unknown_start_time = time.time()
-                    elapsed = time.time() - unknown_start_time
-                    if elapsed >= REQUIRED_SECONDS:
-                        messages.error(request, "Face not recognized.")
-                        log_event(user, EventType.FACE_FAIL)
-                        video_capture.release()
-                        cv2.destroyAllWindows()      
-                        return redirect("home")
 
 
-        if len(face_locations) == 0:
-            recognized_start_time = None
-            unknown_start_time = None
-            print("No face detected")
-        cv2.imshow('Video', frame)
+            if len(face_locations) == 0:
+                recognized_start_time = None
+                unknown_start_time = None
+                print("No face detected")
+            cv2.imshow('Video', frame)
 
-        # Hit 'q' on the keyboard to quit!
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+            # Hit 'q' on the keyboard to quit!
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
 
-    # Release handle to the webcam
-    video_capture.release()
-    cv2.destroyAllWindows()
+        # Release handle to the webcam
+        video_capture.release()
+        cv2.destroyAllWindows()

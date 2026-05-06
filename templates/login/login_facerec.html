@@ -1,11 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    
-</body>
-</html>
+{% extends 'partials/base.html'%}
+
+{% block content %}
+{% include 'partials/messages.html' %}
+<div class="d-flex align-items-center justify-content-center mt-5 col-md-6 offset-md-3">
+    <h3>Please open a camera and continuously capture your face for 3 seconds</h3><br>
+    <a href="{% url 'recognize_face' %}"><button class="btn btn-primary">Start</button></a>
+</div>
+{% endblock %}

@@ -39,6 +39,9 @@ class SecurityEvent(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     event_type = models.CharField(choices=EventType.choices, max_length=64)
 
+    def __str__(self):
+        return f'SecurityEvent(user={self.user}, created_at={self.created_at}, event_type={self.event_type})'
+
 class LoginSession(models.Model):
     session_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
